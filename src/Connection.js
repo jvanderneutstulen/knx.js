@@ -135,6 +135,8 @@ FSM.prototype.prepareDatagram = function(svcType) {
   this.AddHPAI(datagram);
   //
   switch (svcType) {
+    case KnxConstants.SERVICE_TYPE.SEARCH_REQUEST:
+      break;
     case KnxConstants.SERVICE_TYPE.CONNECT_REQUEST:
       this.AddTunn(datagram);
       this.AddCRI(datagram); // no break!

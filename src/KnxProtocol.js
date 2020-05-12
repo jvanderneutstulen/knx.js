@@ -206,6 +206,47 @@ KnxProtocol.lengths['HPAI'] = function(value) {
   return (value ? 8 : 0);
 }
 
+KnxProtocol.define('DIBdevinfo', {
+  read: function (propertyName) {
+    this.pushStack({ physical_addr: null, serial: null, name: null, description_type: null, unused: null})
+    .UInt8('header_length')
+    .UInt8('description_type')
+    .raw('unused', 2)
+    .raw('physical_addr', 2)
+    .raw('unused', 2)
+    .raw('serial', 6)
+    .raw('unused', 4)
+    .raw('unused', 6)
+    .raw('name', 30)
+    .tap(function (hdr) {
+      if (this.buffer.length < hdr.header_length) {
+        if (KnxProtocol.debug) KnxLog.get().trace('%d %d %d', this.buffer.length, this.offset, hdr.header_length);
+        throw "Incomplete KNXNet DIB Devinfo header";
+      }
+      if (hdr.description_type !== 1) {
+        throw "Unknown Devinfo structure";
+      }
+
+      hdr.physical_addr  = KnxAddress.toString(hdr.physical_addr, KnxAddress.TYPE.PHYSICAL);
+      hdr.serial = hdr.serial.toString('hex');
+      hdr.name = hdr.name.toString('ascii', 0, hdr.name.indexOf(0) !== -1 ? hdr.name.indexOf(0) : hdr.name.length );
+
+      if (KnxProtocol.debug) {
+        KnxLog.get().trace('read DIB devinfo: %j', hdr);
+      }
+    })
+    .popStack(propertyName, function (data) {
+      return data;
+    });
+  },
+  write: function (value) {
+    KnxLog.get().error("DIBdevinfo: not implemented");
+  }
+});
+KnxProtocol.lengths['DIBdevinfo'] = function(value) {
+  return (value ? 54 : 0);
+}
+
 /* ==================== APCI ====================== */
 //
 //  Message Code    = 0x11 - a L_Data.req primitive
@@ -541,6 +582,12 @@ KnxProtocol.define('KNXNetHeader', {
             .CRI('cri');
            break;
         }
+        case KnxConstants.SERVICE_TYPE.SEARCH_RESPONSE: {
+          this.HPAI('hpai');
+          this.DIBdevinfo('devinfo');
+          // TODO: Supported Service Families
+          break;
+	}
         case KnxConstants.SERVICE_TYPE.CONNECT_RESPONSE:
         case KnxConstants.SERVICE_TYPE.CONNECTIONSTATE_REQUEST:
         case KnxConstants.SERVICE_TYPE.CONNECTIONSTATE_RESPONSE:
@@ -586,13 +633,14 @@ KnxProtocol.define('KNXNetHeader', {
       .UInt16BE(value.service_type)
       .UInt16BE(value.total_length);
     switch (value.service_type) {
-      //case SERVICE_TYPE.SEARCH_REQUEST:
+      case KnxConstants.SERVICE_TYPE.SEARCH_REQUEST:
       case KnxConstants.SERVICE_TYPE.CONNECT_REQUEST: {
         if (value.hpai) this.HPAI(value.hpai);
         if (value.tunn) this.HPAI(value.tunn);
         if (value.cri)  this.CRI(value.cri);
         break;
       }
+      case KnxConstants.SERVICE_TYPE.SEARCH_RESPONSE:
       case KnxConstants.SERVICE_TYPE.CONNECT_RESPONSE:
       case KnxConstants.SERVICE_TYPE.CONNECTIONSTATE_REQUEST:
       case KnxConstants.SERVICE_TYPE.CONNECTIONSTATE_RESPONSE:
@@ -623,11 +671,13 @@ KnxProtocol.lengths['KNXNetHeader'] = function(value) {
   if (!value) throw "Must supply a valid KNXNetHeader value";
   switch (value.service_type) {
     //case SERVICE_TYPE.SEARCH_REQUEST:
+    case KnxConstants.SERVICE_TYPE.SEARCH_REQUEST:
     case KnxConstants.SERVICE_TYPE.CONNECT_REQUEST:
       return 6
         + knxlen('HPAI', value.hpai)
         + knxlen('HPAI', value.tunn)
         + knxlen('CRI', value.cri);
+    case KnxConstants.SERVICE_TYPE.SEARCH_RESPONSE:
     case KnxConstants.SERVICE_TYPE.CONNECT_RESPONSE:
     case KnxConstants.SERVICE_TYPE.CONNECTIONSTATE_REQUEST:
     case KnxConstants.SERVICE_TYPE.CONNECTIONSTATE_RESPONSE:

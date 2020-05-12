@@ -11,6 +11,7 @@ const machina = require('machina');
 const KnxConstants = require('./KnxConstants.js');
 const IpRoutingConnection = require('./IpRoutingConnection.js');
 const IpTunnelingConnection = require('./IpTunnelingConnection.js');
+const DiscoverConnection = require('./DiscoverConnection.js');
 const KnxLog = require('./KnxLog.js');
 
 module.exports = machina.Fsm.extend({
@@ -36,7 +37,7 @@ module.exports = machina.Fsm.extend({
     this.log.debug('initializing %s connection to %s', range, this.remoteEndpoint.addrstring);
     switch (range) {
       case 'multicast':
-        IpRoutingConnection(this, options);
+        DiscoverConnection(this, options);
         break;
       case 'unicast':
       case 'private':
@@ -64,6 +65,56 @@ module.exports = machina.Fsm.extend({
     jumptoconnecting: {
       _onEnter: function( ) {
         this.transition("connecting");
+      }
+    },
+
+    searching: {
+      _onEnter: function( ) {
+        var sm = this;
+        sm.search_attempts = 0;
+        if (!this.localAddress) throw "Not bound to an IPv4 non-loopback interface";
+        this.log.debug(util.format('Connecting via %s...', sm.localAddress));
+        // we retry 3 times
+        this.searchtimer = setInterval( function() {
+          sm.search_attempts += 1;
+          if (sm.search_attempts >= 3) {
+            clearInterval( sm.searchtimer );
+            this.log.warn('connection timed out, falling back to pure routing mode...');
+            IpRoutingConnection(this, this.options);
+            this.Connect();
+          } else {
+             this.log.warn('search timed out, retrying...');
+             this.send( sm.prepareDatagram( KnxConstants.SERVICE_TYPE.SEARCH_REQUEST ));
+          }
+        }.bind( this ), 3000 );
+        // send search request directly
+        this.send( sm.prepareDatagram( KnxConstants.SERVICE_TYPE.SEARCH_REQUEST ));
+      },
+      _onExit: function( ) {
+        clearInterval( this.searchtimer );
+      },
+      inbound_SEARCH_RESPONSE: function (datagram) {
+        var sm = this;
+        this.log.debug(util.format('got search response from %s (%s, %s, %s)', datagram.hpai.tunnel_endpoint, datagram.devinfo.physical_addr, datagram.devinfo.serial, datagram.devinfo.name));
+        if (!this.options.physServerAddr || datagram.devinfo.physical_addr === this.options.physServerAddr) {
+          clearInterval( sm.searchtimer );
+          this.log.info(util.format('Using device with physical address %s (%s, %s, %s)', datagram.devinfo.physical_addr, datagram.hpai.tunnel_endpoint, datagram.devinfo.serial, datagram.devinfo.name));
+          var ipinfo = datagram.hpai.tunnel_endpoint.split(':');
+          this.remoteEndpoint = {
+            addrstring: ipinfo[0],
+            addr: ipaddr.parse(ipinfo[0]),
+            port: ipinfo[1]
+          };
+          this.useTunneling = true;
+          IpTunnelingConnection(this, this.options);
+          this.Connect();
+        } else {
+          this.log.warn(util.format('Ignoring device with physical address %s (%s, %s, %s)', datagram.devinfo.physical_addr, datagram.hpai.tunnel_endpoint, datagram.devinfo.serial, datagram.devinfo.name));
+        }
+      },
+      "*": function ( data ) {
+        this.log.debug(util.format('*** deferring Until Transition %j', data));
+        this.deferUntilTransition( 'idle' );
       }
     },
 
