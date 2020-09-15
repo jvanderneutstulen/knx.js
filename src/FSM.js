@@ -22,7 +22,6 @@ module.exports = machina.Fsm.extend({
     this.log = KnxLog.get(options);
     // set the local IP endpoint
     this.localAddress = null;
-    this.ThreeLevelGroupAddressing = true;
     // reconnection cycle counter
     this.reconnection_cycles = 0;
     // a cache of recently sent requests
@@ -153,12 +152,14 @@ module.exports = machina.Fsm.extend({
               this.log.warn('connection timed out, retrying...');
               this.send( sm.prepareDatagram( KnxConstants.SERVICE_TYPE.CONNECT_REQUEST ));
             }
-          }.bind( this ), 3000 );
+          }.bind( this ), 5000 );
           delete this.channel_id;
           delete this.conntime;
           delete this.lastSentTime;
           // send connect request directly
-          this.send( sm.prepareDatagram( KnxConstants.SERVICE_TYPE.CONNECT_REQUEST ));
+          setTimeout(function() {
+            sm.send( sm.prepareDatagram( KnxConstants.SERVICE_TYPE.CONNECT_REQUEST ));
+          }, 150);
         } else {
           // no connection sequence needed in pure multicast routing
           this.transition( "connected" );

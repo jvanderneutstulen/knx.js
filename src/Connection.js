@@ -320,6 +320,7 @@ FSM.prototype.AddTunn = function(datagram) {
 }
 
 Connection = function(options) {
+  KnxNetProtocol.twoLevelAddressing = options.twoLevelAddressing || false;
   var conn = new FSM(options);
   // register with the FSM any event handlers passed into the options object
   if (typeof options.handlers === 'object') {
