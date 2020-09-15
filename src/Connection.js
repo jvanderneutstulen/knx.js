@@ -313,6 +313,7 @@ const AddTunn = (datagram) => {
 
 // TODO: Conncetion is obviously not a constructor, but tests call it with `new`. That should be deprecated.
 function Connection(options) {
+  KnxNetProtocol.twoLevelAddressing = options.twoLevelAddressing || false;
   const conn = new FSM(options);
   // register with the FSM any event handlers passed into the options object
   if (typeof options.handlers === 'object') {

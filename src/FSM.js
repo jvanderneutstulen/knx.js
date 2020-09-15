@@ -20,7 +20,6 @@ module.exports = machina.Fsm.extend({
     this.log = KnxLog.get(options);
     // set the local IP endpoint
     this.localAddress = null;
-    this.ThreeLevelGroupAddressing = true;
     // reconnection cycle counter
     this.reconnection_cycles = 0;
     // a cache of recently sent requests

@@ -230,7 +230,7 @@ KnxProtocol.define('DIBdevinfo', {
         throw "Unknown Devinfo structure";
       }
 
-      hdr.physical_addr  = KnxAddress.toString(hdr.physical_addr, KnxAddress.TYPE.PHYSICAL);
+      hdr.physical_addr  = KnxAddress.toString(hdr.physical_addr, KnxAddress.TYPE.PHYSICAL, KnxProtocol.twoLevelAddressing);
       hdr.serial = hdr.serial.toString('hex');
       hdr.name = hdr.name.toString('ascii', 0, hdr.name.indexOf(0) !== -1 ? hdr.name.indexOf(0) : hdr.name.length );
 
@@ -527,14 +527,8 @@ KnxProtocol.define('CEMI', {
         // parse 16bit control field
         hdr.ctrl = ctrlStruct.parse(hdr.ctrl);
         // KNX source addresses are always physical
-        hdr.src_addr = KnxAddress.toString(
-          hdr.src_addr,
-          KnxAddress.TYPE.PHYSICAL
-        );
-        hdr.dest_addr = KnxAddress.toString(
-          hdr.dest_addr,
-          hdr.ctrl.destAddrType
-        );
+        hdr.src_addr  = KnxAddress.toString(hdr.src_addr, KnxAddress.TYPE.PHYSICAL, KnxProtocol.twoLevelAddressing);
+        hdr.dest_addr = KnxAddress.toString(hdr.dest_addr, hdr.ctrl.destAddrType, KnxProtocol.twoLevelAddressing);
         switch (hdr.msgcode) {
           case KnxConstants.MESSAGECODES['L_Data.req']:
           case KnxConstants.MESSAGECODES['L_Data.ind']:
@@ -567,8 +561,8 @@ KnxProtocol.define('CEMI', {
       .UInt8(value.addinfo_length)
       .UInt8(ctrlField1)
       .UInt8(ctrlField2)
-      .raw(KnxAddress.parse(value.src_addr, KnxAddress.TYPE.PHYSICAL), 2)
-      .raw(KnxAddress.parse(value.dest_addr, value.ctrl.destAddrType), 2);
+      .raw(KnxAddress.parse(value.src_addr, KnxAddress.TYPE.PHYSICAL, KnxProtocol.twoLevelAddressing), 2)
+      .raw(KnxAddress.parse(value.dest_addr, value.ctrl.destAddrType, KnxProtocol.twoLevelAddressing), 2);
     // only need to marshal an APDU if this is a
     // L_Data.* (requet/indication/confirmation)
     switch (value.msgcode) {
