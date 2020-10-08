@@ -297,8 +297,8 @@ const datagramDesc = (dg) => {
 const AddHPAI = (datagram) => {
   datagram.hpai = {
     protocol_type: 1, // UDP
-    //tunnel_endpoint: this.localAddress + ":" + this.control.address().port
-    tunnel_endpoint: '0.0.0.0:0'
+    tunnel_endpoint: this.localAddress + ":" + this.socket.address().port
+    //tunnel_endpoint: '0.0.0.0:0'
   };
 }
 
@@ -306,7 +306,8 @@ const AddHPAI = (datagram) => {
 const AddTunn = (datagram) => {
   datagram.tunn = {
     protocol_type: 1, // UDP
-    tunnel_endpoint: '0.0.0.0:0'
+    tunnel_endpoint: this.localAddress + ":" + this.socket.address().port
+    //tunnel_endpoint: '0.0.0.0:0'
       //tunnel_endpoint: this.localAddress + ":" + this.tunnel.address().port
   };
 }
