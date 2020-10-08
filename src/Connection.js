@@ -305,8 +305,8 @@ FSM.prototype.datagramDesc = function(dg) {
 FSM.prototype.AddHPAI = function(datagram) {
   datagram.hpai = {
     protocol_type: 1, // UDP
-    //tunnel_endpoint: this.localAddress + ":" + this.control.address().port
-    tunnel_endpoint: '0.0.0.0:0'
+    tunnel_endpoint: this.localAddress + ":" + this.socket.address().port
+    //tunnel_endpoint: '0.0.0.0:0'
   };
 }
 
@@ -314,7 +314,8 @@ FSM.prototype.AddHPAI = function(datagram) {
 FSM.prototype.AddTunn = function(datagram) {
   datagram.tunn = {
     protocol_type: 1, // UDP
-    tunnel_endpoint: '0.0.0.0:0'
+    tunnel_endpoint: this.localAddress + ":" + this.socket.address().port
+    //tunnel_endpoint: '0.0.0.0:0'
       //tunnel_endpoint: this.localAddress + ":" + this.tunnel.address().port
   };
 }
