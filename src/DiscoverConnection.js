@@ -17,7 +17,7 @@ function DiscoverConnection(instance, options) {
   instance.BindSocket = function(cb) {
     var conn = this;
     var udpSocket = dgram.createSocket({type: "udp4", reuseAddr: true});
-    udpSocket.on('listening', function() {
+    udpSocket.on('listening', () => {
       log.debug(util.format(
         'DiscoverConnection %s:%d, adding membership for %s',
         instance.localAddress, udpSocket.address().port, conn.remoteEndpoint.addr
@@ -40,11 +40,11 @@ function DiscoverConnection(instance, options) {
   instance.Connect = function() {
     var sm = this;
     this.localAddress = this.getLocalAddress();
-    this.socket = this.BindSocket(function(socket) {
-      socket.on("error", function(errmsg) {
+    this.socket = this.BindSocket((socket) => {
+      socket.on("error", (errmsg) => {
         log.debug(util.format('Socket error: %j', errmsg));
       });
-      socket.on("message", function(msg, rinfo, callback) {
+      socket.on("message", (msg, rinfo, callback) => {
         log.debug('Inbound multicast message from ' + rinfo.address + ': '+ msg.toString('hex'));
         sm.onUdpSocketMessage(msg, rinfo, callback);
       });
